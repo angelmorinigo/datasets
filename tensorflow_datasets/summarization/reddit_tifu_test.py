@@ -22,9 +22,21 @@ from tensorflow_datasets.summarization import reddit_tifu
 class RedditTifuTest(testing.DatasetBuilderTestCase):
   DATASET_CLASS = reddit_tifu.RedditTifu
   SPLITS = {
-      "train": 1,  # Number of fake train example
+      "train": 3,  # Number of fake train example
   }
   DL_EXTRACT_RESULT = "data.json"
+  BUILDER_CONFIG_NAMES_TO_TEST = ["short", "long"]
+
+
+class RedditTifuSplitTest(testing.DatasetBuilderTestCase):
+  DATASET_CLASS = reddit_tifu.RedditTifu
+  SPLITS = {
+      "train": 1,  # Number of fake train example
+      "test": 1,  # Number of fake test example
+      "validation": 1,  # Number of fake validation example
+  }
+  DL_EXTRACT_RESULT = {"data": "data.json", "split": "split.json"}
+  BUILDER_CONFIG_NAMES_TO_TEST = ["long_split"]
 
 
 if __name__ == "__main__":
