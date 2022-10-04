@@ -18,12 +18,17 @@
 import abc
 import collections
 import contextlib
+import functools
+import importlib
 import inspect
-from typing import ClassVar, Iterator, List, Type
+import os.path
+from typing import ClassVar, Iterator, List, Type, Set
 
+from tensorflow_datasets.core import constants
 from tensorflow_datasets.core import naming
 from tensorflow_datasets.core import visibility
 from tensorflow_datasets.core.utils import py_utils
+from tensorflow_datasets.core.utils import resource_utils
 
 # Internal registry containing <str registered_name, DatasetBuilder subclass>
 _DATASET_REGISTRY = {}
@@ -204,8 +209,36 @@ def list_imported_builders() -> List[str]:
   return sorted(all_builders)
 
 
+@functools.lru_cache(maxsize=None)
+def _get_existing_dataset_packages() -> Set[Text]:
+  """Returns existing dataset packages."""
+  datasets = set()
+  try:
+    datasets_dir_path = resource_utils.tfds_path(
+        constants.DATASETS_TFDS_SRC_DIR)
+  except OSError:
+    return datasets
+  if not datasets_dir_path.exists():
+    return datasets
+  for child in datasets_dir_path.iterdir():
+    # All children of datasets/ directory are packages of datasets.
+    # There are no exceptions, so no needs to check child is a directory and
+    # contains a `builder.py` module.
+    datasets.add(child.name)
+  datasets.remove('__init__.py')
+  return datasets
+
+
 def imported_builder_cls(name: str) -> Type[RegisteredDataset]:
   """Returns the Registered dataset class."""
+  if name in _get_existing_dataset_packages():
+    modules_path = '.'.join(constants.DATASETS_TFDS_SRC_DIR.split(os.path.sep))
+    cls = importlib.import_module(
+        f'tensorflow_datasets.{modules_path}.{name}.builder').Builder
+    cls.pkg_dir_path = resource_utils.tfds_path(
+        os.path.join(constants.DATASETS_TFDS_SRC_DIR, name))
+    return cls
+
   if name in _ABSTRACT_DATASET_REGISTRY:
     # Will raise TypeError: Can't instantiate abstract class X with abstract
     # methods y, before __init__ even get called

@@ -20,6 +20,7 @@ from unittest import mock
 import pytest
 
 from tensorflow_datasets import testing
+from tensorflow_datasets.core import constants
 from tensorflow_datasets.core import load
 from tensorflow_datasets.core import registered
 from tensorflow_datasets.core import splits
@@ -258,6 +259,26 @@ def test_custom_name():
 
   assert "custom_name" == SomeCustomNameBuilder.name
   assert "custom_name" in load.list_builders()
+
+
+class ConfigBasedBuildersTest(testing.TestCase):
+
+  def setUp(self):
+    super().setUp()
+    registered._get_existing_dataset_packages.cache_clear()
+    constants.DATASETS_TFDS_SRC_DIR = "testing/dummy_config_based_datasets"
+
+  def tearDown(self):
+    super().tearDown()
+    registered._get_existing_dataset_packages.cache_clear()
+
+  def test__get_existing_dataset_packages(self):
+    names = registered._get_existing_dataset_packages()
+    self.assertEqual(names, set(["dummy_ds_1"]))
+
+  def test_imported_builder_cls(self):
+    builder = registered.imported_builder_cls("dummy_ds_1")
+    self.assertEqual(builder.name, "dummy_ds_1")
 
 
 # Tests for RegisteredDatasetCollection.
