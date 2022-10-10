@@ -13,16 +13,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""PASS dataset.
+"""Dummy config-based dataset self-contained in a directory."""
 
-DEPRECATED!
-If you want to use the PASS Dataset class, use:
-tfds.builder('pass')
-"""
+import tensorflow as tf
+import tensorflow_datasets.public_api as tfds
 
-# We cannot do a regular import here, as the module is named "pass", this is all
-# right though, as this module willyou eventually go away.
-import importlib
 
-PASS = (importlib.import_module('tensorflow_datasets.datasets.pass.builder')
-       ).Builder
+class Builder(tfds.core.GeneratorBasedBuilder, tfds.core.ConfigBasedBuilder):
+  """Dummy dataset."""
+
+  VERSION = tfds.core.Version('1.0.0')
+
+  def _info(self):
+    return self.dataset_info_from_configs(
+        features=tfds.features.FeaturesDict({'x': tf.int64}),)
+
+  def _split_generators(self, dl_manager):
+    return [
+        tfds.core.SplitGenerator(name=tfds.Split.TRAIN,),
+    ]
+
+  def _generate_examples(self):
+    for i in range(10):
+      yield i, {'x': i}
